@@ -194,7 +194,7 @@ h2 {
   /*grid-template-columns: repeat(auto-fit, minmax(280px, 340px)); */
   grid-template-columns: repeat(auto-fit, minmax(180px, 300px));
   justify-content: left;
-  gap: 40px;
+  gap: 50px;
 }
 
 .project-card {
