@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tech Support Chat</title>
+
+  <style>
+    :root {
+      --bg: #f7f7f5;
+      --panel: #ffffff;
+      --text: #1f2933;
+      --muted: #4b5563;
+      --border: #d6d9dd;
+      --accent: #4a6b7c;
+      --accent-dark: #36505e;
+      --user-bubble: #e8edf0;
+      --bot-bubble: #ffffff;
+      --focus: #2b6cb0;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      font-family: Verdana, Arial, Tahoma, sans-serif;
+      color: var(--text);
+      font-size: 17px;
+      line-height: 1.6;
+      letter-spacing: 0.02em;
+      word-spacing: 0.06em;
+    }
+
+    .chat-launcher {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      z-index: 9999;
+      background: var(--accent);
+      color: #ffffff;
+      border: none;
+      border-radius: 999px;
+      padding: 14px 22px;
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: bold;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    }
+
+    .chat-launcher:hover,
+    .chat-launcher:focus-visible {
+      background: var(--accent-dark);
+    }
+
+    .chat-panel {
+      position: fixed;
+      right: 20px;
+      bottom: 90px;
+      width: min(400px, calc(100vw - 32px));
+      max-height: min(640px, calc(100vh - 120px));
+      background: var(--panel);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.16);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      z-index: 9999;
+    }
+
+    .chat-panel.open {
+      display: flex;
+    }
+
+    .chat-header {
+      background: var(--accent);
+      color: #ffffff;
+      padding: 18px;
+    }
+
+    .chat-header h2 {
+      margin: 0;
+      font-size: 21px;
+      line-height: 1.35;
+    }
+
+    .chat-header p {
+      margin: 6px 0 0;
+      font-size: 15px;
+      line-height: 1.5;
+    }
+
+    .chat-messages {
+      padding: 18px;
+      overflow-y: auto;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .message {
+      max-width: 88%;
+      padding: 13px 15px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .bot {
+      align-self: flex-start;
+      background: var(--bot-bubble);
+    }
+
+    .user {
+      align-self: flex-end;
+      background: var(--user-bubble);
+      border-color: #c3ccd2;
+    }
+
+    .message p {
+      margin: 0 0 10px;
+    }
+
+    .message p:last-child {
+      margin-bottom: 0;
+    }
+
+    .message ul {
+      margin: 8px 0 0;
+      padding-left: 22px;
+    }
+
+    .message li {
+      margin-bottom: 6px;
+    }
+
+    .quick-replies {
+      padding: 0 18px 14px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .quick-replies button {
+      font-family: inherit;
+      font-size: 16px;
+      padding: 10px 14px;
+      border-radius: 999px;
+      border: 2px solid var(--accent);
+      background: #ffffff;
+      color: var(--accent-dark);
+      cursor: pointer;
+    }
+
+    .quick-replies button:hover,
+    .quick-replies button:focus-visible {
+      background: var(--accent);
+      color: #ffffff;
+    }
+
+    .chat-input {
+      display: flex;
+      gap: 10px;
+      padding: 14px;
+      border-top: 2px solid var(--border);
+      background: #fbfbfa;
+    }
+
+    .chat-input label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip: rect(0 0 0 0);
+    }
+
+    .chat-input input {
+      flex: 1;
+      font-family: inherit;
+      font-size: 17px;
+      padding: 12px;
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      background: #ffffff;
+      color: var(--text);
+    }
+
+    .chat-input input:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 2px;
+    }
+
+    .chat-input button {
+      font-family: inherit;
+      font-size: 17px;
+      font-weight: bold;
+      padding: 12px 18px;
+      border: none;
+      border-radius: 10px;
+      background: var(--accent);
+      color: #ffffff;
+      cursor: pointer;
+    }
+
+    .chat-input button:hover,
+    .chat-input button:focus-visible {
+      background: var(--accent-dark);
+    }
+
+    .email-link {
+      color: var(--accent-dark);
+      font-weight: bold;
+    }
+
+    @media (max-width: 480px) {
+      .chat-panel {
+        right: 16px;
+        left: 16px;
+        bottom: 86px;
+        width: auto;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <button class="chat-launcher" id="chatLauncher" aria-expanded="false" aria-controls="chatPanel">
+    Chat with us
+  </button>
+
+  <section class="chat-panel" id="chatPanel" role="dialog" aria-label="Customer support chat">
+    <header class="chat-header">
+      <h2>Hello, how can we help?</h2>
+      <p>We can help with services, prices, projects, and getting in touch.</p>
+    </header>
+
+    <div class="chat-messages" id="chatMessages" aria-live="polite"></div>
+
+    <div class="quick-replies" id="quickReplies">
+      <button data-intent="services">What services do you offer?</button>
+      <button data-intent="prices">What are your prices?</button>
+      <button data-intent="about">What is your business about?</button>
+      <button data-intent="contact">How do I contact a person?</button>
+    </div>
+
+    <form class="chat-input" id="chatForm">
+      <label for="chatInput">Type your question</label>
+      <input id="chatInput" type="text" autocomplete="off" placeholder="Type your question here">
+      <button type="submit">Send</button>
+    </form>
+  </section>
+
+  <script>
+    // EDIT THESE DETAILS FOR YOUR BUSINESS
+    const BUSINESS = {
+      name: "Your Tech Business",
+      email: "hello@yourbusiness.com",
+      about:
+        "We help individuals and small organisations with practical technology: websites, mobile apps, automation, technical support, and clear digital solutions.",
+      services: [
+        "Website design and improvements",
+        "Mobile app development",
+        "Technical support and troubleshooting",
+        "Small business digital tools",
+        "Custom programming projects"
+      ],
+      prices: [
+        "Website review or small update: from £50",
+        "Landing page or portfolio website: from £250",
+        "Mobile app prototype: from £500",
+        "Technical support: £30 per hour",
+        "Custom project: quoted after a free discovery chat"
+      ]
+    };
+
+    const launcher = document.getElementById("chatLauncher");
+    const panel = document.getElementById("chatPanel");
+    const messages = document.getElementById("chatMessages");
+    const quickReplies = document.getElementById("quickReplies");
+    const form = document.getElementById("chatForm");
+    const input = document.getElementById("chatInput");
+
+    const replies = {
+      services:
+        `<p>We offer:</p>
+         <ul>
+           ${BUSINESS.services.map(service => `<li>${service}</li>`).join("")}
+         </ul>
+         <p>Tell us a little about your project and we can suggest the best next step.</p>`,
+
+      prices:
+        `<p>Our starting prices are:</p>
+         <ul>
+           ${BUSINESS.prices.map(price => `<li>${price}</li>`).join("")}
+         </ul>
+         <p>Final pricing depends on the size and requirements of the project.</p>`,
+
+      about:
+        `<p>${BUSINESS.about}</p>
+         <p>We aim to make technology simple, useful, and accessible for every client.</p>`,
+
+      contact:
+        `<p>To speak with a real person, please email:</p>
+         <p><a class="email-link" href="mailto:${BUSINESS.email}">${BUSINESS.email}</a></p>
+         <p>Please include your name, project idea, and the best way to contact you.</p>`,
+
+      fallback:
+        `<p>Thanks for your message. A member of our team can help with this personally.</p>
+         <p>Please email <a class="email-link" href="mailto:${BUSINESS.email}">${BUSINESS.email}</a> and include a short summary of what you need.</p>`
+    };
+
+    function addMessage(text, sender) {
+      const div = document.createElement("div");
+      div.className = `message ${sender}`;
+      div.innerHTML = text;
+      messages.appendChild(div);
+      messages.scrollTop = messages.scrollHeight;
+    }
+
+    function respond(userText) {
+      const text = userText.toLowerCase();
+
+      if (text.includes("service") || text.includes("offer") || text.includes("help with")) {
+        return replies.services;
+      }
+      if (text.includes("price") || text.includes("cost") || text.includes("charge") || text.includes("how much")) {
+        return replies.prices;
+      }
+      if (text.includes("about") || text.includes("who are you") || text.includes("what do you do")) {
+        return replies.about;
+      }
+      if (text.includes("email") || text.includes("contact") || text.includes("person") || text.includes("human") || text.includes("speak")) {
+        return replies.contact;
+      }
+      return replies.fallback;
+    }
+
+    launcher.addEventListener("click", () => {
+      const isOpen = panel.classList.toggle("open");
+      launcher.setAttribute("aria-expanded", isOpen);
+      launcher.textContent = isOpen ? "Close chat" : "Chat with us";
+
+      if (isOpen && messages.children.length === 0) {
+        addMessage(
+          `<p>Welcome to ${BUSINESS.name}. How can we help you today?</p>
+           <p>You can choose a topic below or type your question.</p>`,
+          "bot"
+        );
+      }
+    });
+
+    quickReplies.addEventListener("click", event => {
+      const button = event.target.closest("button");
+      if (!button) return;
+
+      const intent = button.dataset.intent;
+      addMessage(button.textContent, "user");
+      addMessage(replies[intent], "bot");
+    });
+
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const userText = input.value.trim();
+      if (!userText) return;
+
+      addMessage(userText, "user");
+      input.value = "";
+      addMessage(respond(userText), "bot");
+    });
+  </script>
+
+</body>
+</html>
